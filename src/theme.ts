@@ -12,8 +12,7 @@ export const theme = createTheme({
         MuiContainer: {
             styleOverrides: {
                 root: {
-                    width: '450px',
-                    maxWidth: '450px',
+                    maxWidth: '460px',
                 }
             }
         }

@@ -1,4 +1,4 @@
-const KEY = 'save';
+const KEY = 'de_save';
 
 export function loadState() {
     try {
