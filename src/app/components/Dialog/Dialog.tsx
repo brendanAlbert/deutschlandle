@@ -230,7 +230,7 @@ function SimpleDialog() {
                   <img
                     width="30"
                     style={{ paddingRight: theme.spacing(2) }}
-                    src={coatOfArmsMap[state?.label]}
+                    src={coatOfArmsMap(state?.label)}
                   />
                   {state.label}
                 </Grid>
