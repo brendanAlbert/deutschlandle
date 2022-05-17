@@ -3,11 +3,6 @@
 
 const calculateDirection = (glat: number, glon: number, alat: number, alon: number, d: number) => {
 
-    
-
-    console.log({
-        msg: `distance between two lats = ${Math.abs(glat - alat)}. distance between two lons = ${Math.abs(glon-alon)}`
-    })
     // smaller long means further west
     // larger long means more east
 

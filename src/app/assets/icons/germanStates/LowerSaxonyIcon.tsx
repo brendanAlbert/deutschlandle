@@ -4,7 +4,10 @@ export const LowerSaxonyIcon = ({ size }: { size?: string }) => {
       width={size ?? "150px"}
       height={size ?? "150px"}
       version="1.1"
-      viewBox="300 330 330 300"
+      viewBox="300 340 330 300"
+      style={{
+        transform: "scale(1.2)",
+      }}
     >
       <g>
         <polygon

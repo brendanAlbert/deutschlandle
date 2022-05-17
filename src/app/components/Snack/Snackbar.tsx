@@ -17,7 +17,7 @@ export function SnackbarPopup() {
         open={state}
         onClose={handleClose}
         message={endMsg}
-        autoHideDuration={4500}
+        autoHideDuration={2500}
         ContentProps={{
           style: {
             fontWeight: 700,

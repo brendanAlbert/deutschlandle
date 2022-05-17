@@ -5,7 +5,10 @@ export const MecklenburgVorpommernIcon = ({ size }: { size?: string }) => {
         width={size ?? "150px"}
         height={size ?? "150px"}
         version="1.1"
-        viewBox="560 240 248 220"
+        viewBox="578 235 218 240"
+        style={{
+          transform: "scale(1.4)",
+        }}
       >
         <g>
           <polygon

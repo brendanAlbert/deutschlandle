@@ -2,30 +2,30 @@ const getDirectionIcon = (number: number, height?: string) => {
   switch (number) {
     case 3:
     case 4:
-      return downArrow("20px");
+      return downArrow("16px");
     case 5:
     case 6:
-      return downRightArrow("20px");
+      return downRightArrow("16px");
     case 7:
     case 8:
-      return rightArrow("20px");
+      return rightArrow("16px");
     case 9:
     case 10:
-      return upRightArrow("20px");
+      return upRightArrow("16px");
     case 11:
     case 12:
-      return upArrow("20px");
+      return upArrow("16px");
     case 13:
     case 14:
-      return upLeftArrow("20px");
+      return upLeftArrow("16px");
     case 15:
     case 16:
-      return leftArrow("20px");
+      return leftArrow("16px");
     case 17:
     case 18:
-      return downLeftArrow("20px");
+      return downLeftArrow("16px");
     case 19:
-      return partyIcon("20px");
+      return partyIcon("16px");
   }
 };
 

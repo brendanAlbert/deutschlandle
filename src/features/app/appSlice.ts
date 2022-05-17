@@ -5,6 +5,7 @@ import { germanStates } from "../../app/components/States/states";
 export interface AppState {
     answer: string;
     guess: string;
+    dialogOpen: boolean;
     directions: number[];
     distances: number[];
   state: string;
@@ -20,25 +21,26 @@ export interface AppState {
   randomIndex: number;
 }
 
-const loadedState = loadState();
-const today = new Date().getDay();
-const has24HrsElapsed = loadedState?.day !== today;
+// const loadedState = loadState();
+// const today = new Date().getDay();
+// const has24HrsElapsed = loadedState?.day !== today;
 
-let stateIndex = Math.floor(Math.random() * germanStates.length);
+// let stateIndex = Math.floor(Math.random() * germanStates.length);
 
-if (has24HrsElapsed) {
-  let newSaveState = {
-    ...loadedState,
-    day: today,
-    stateIndex
-  } 
-  saveState(newSaveState)
-} else {
-  stateIndex = loadedState.stateIndex;
-}
+// if (has24HrsElapsed) {
+//   let newSaveState = {
+//     ...loadedState,
+//     day: today,
+//     stateIndex
+//   } 
+//   saveState(newSaveState)
+// } else {
+//   stateIndex = loadedState.stateIndex;
+// }
 
 const initialState: AppState = {
   answer: '',
+  dialogOpen: false,
   guess: '',
   state: "",
   snackbarOpen: false,
@@ -52,7 +54,7 @@ const initialState: AppState = {
   guessPercents: [],
   results: [],
   allResults: [],
-  randomIndex: stateIndex,
+  randomIndex: 0,
 };
 
 export const appSlice = createSlice({
@@ -102,9 +104,12 @@ export const appSlice = createSlice({
     addAllResults: (state, action: PayloadAction<number[]>) => {
         state.allResults.push(action.payload);
     },
-    // setRandomIndex: (state, action: PayloadAction<number>) => {
-    //     state.randomIndex = action.payload;
-    // },
+    setRandomIndex: (state, action: PayloadAction<number>) => {
+        state.randomIndex = action.payload;
+    },
+    toggleDialog: (state, action: PayloadAction<boolean>) => {
+        state.dialogOpen = action.payload;
+    },
   },
 });
 
@@ -116,13 +121,14 @@ export const {
   setGameOverWin,
   setGameOverLoss,
 setClipboardText,
-// setRandomIndex,
+setRandomIndex,
   addDirection,
   addDistance,
   addGuessPercent,
   setAnswerStr,
   setGuess,
   setResults,
+  toggleDialog,
   addAllResults,
 } = appSlice.actions;
 export default appSlice.reducer;

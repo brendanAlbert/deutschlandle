@@ -10,7 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import Fade from "@mui/material/Fade";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "./App.css";
 import getDirectionIcon from "./app/components/Directions/DirectionIcons";
 import { GuessTransition } from "./app/components/GuessTransition";
@@ -29,21 +29,32 @@ import {
   setGameOverLoss,
   setGameOverWin,
   setGuess,
+  setRandomIndex,
   setResults,
   setSnackbarMsg,
+  toggleDialog,
 } from "./features/app/appSlice";
 import { calculateDirection } from "./helpers/calculateDirection";
 import { distance } from "./helpers/calculateLatLongDistance";
 import { calculatePercentage } from "./helpers/calculatePercentage";
 import { confetti } from "./helpers/confetti";
 import { getShareText } from "./helpers/getShareText";
+import { useGetTodaysStateQuery } from "./services/stateFetch";
 import { theme } from "./theme";
+import Skeleton from "@mui/material/Skeleton";
+import { SimpleDialog } from "./app/components/Dialog/Dialog";
+import { loadState, saveState } from "./app/browserStorage";
 
-// TODO - determine how to calculate state of the day for 24 hours
-// TODO - create seed generator
 // TODO - save users stats in localstorage
-// TODO - my stats btn and modal/popup
-const GuessRow = (i: number, guesses: string[], answerState: string) => {
+const GuessRow = ({
+  i,
+  guesses,
+  answerState,
+}: {
+  i: number;
+  guesses: string[];
+  answerState: string;
+}) => {
   const [animatedRow, showAnimatedRow] = useState(true);
   const dists = useAppSelector((state) => state.app.distances);
   const dirs = useAppSelector((state) => state.app.directions);
@@ -90,11 +101,13 @@ const GuessRow = (i: number, guesses: string[], answerState: string) => {
                 xs={6.5}
                 sx={{
                   display: "flex",
-                  justifyContent: "center",
+                  justifyContent: "flex-end",
                   alignItems: "center",
                 }}
               >
-                <Typography p={1}>{guesses[i] ?? ""}&nbsp; </Typography>
+                <Typography fontSize={14} p={1}>
+                  {guesses[i] ?? ""}&nbsp;{" "}
+                </Typography>
               </Grid>
               <Grid
                 key={i + "b"}
@@ -106,17 +119,21 @@ const GuessRow = (i: number, guesses: string[], answerState: string) => {
                   justifyContent: "end",
                 }}
               >
-                <Box pr={1}>{guesses[i] ? dists[i] + ` kms ` : null}</Box>
+                <Box sx={{ fontSize: "14px" }} pr={1}>
+                  {guesses[i] ? dists[i] + ` kms ` : null}
+                </Box>
                 &nbsp;&nbsp;&nbsp;
-                <Box pr={1}>
+                <Box pr={1} mt={1}>
                   {guesses[i] ? dirs && getDirectionIcon(dirs[i]) : ""}
                 </Box>
               </Grid>
               <Grid
                 xs={2}
                 key={i + "c"}
+                pr={3}
                 sx={{
                   display: "flex",
+                  justifyContent: "flex-end",
                   alignItems: "center",
                 }}
                 item
@@ -170,7 +187,8 @@ const GuessRow = (i: number, guesses: string[], answerState: string) => {
               xs={2}
               key={i + "c"}
               sx={{
-                textAlign: "center",
+                display: "flex",
+                justifyContent: "flex-end",
               }}
               item
             >
@@ -181,6 +199,8 @@ const GuessRow = (i: number, guesses: string[], answerState: string) => {
       </Box>
     );
   }
+
+  return null;
 };
 
 const Delay = 2800;
@@ -192,15 +212,23 @@ function App() {
   const gameOverWin = useAppSelector((state) => state.app.gameOverWin);
   const [value, setValue] = useState<{ label: string } | null>(null);
   const [answer, setAnswer] = useState<IDeutschlandle>({} as IDeutschlandle);
-  const clipboardText = useAppSelector((state) => state.app.clipboardText);
+
   const allResults = useAppSelector((state) => state.app.allResults);
   const randomIndex = useAppSelector((state) => state.app.randomIndex);
 
-  const chooseTodayState = () => {
-    const ans = germanStates[randomIndex];
-    setAnswer(ans);
-    dispatch(setAnswerStr(ans.label));
-  };
+  const { data, error, isLoading } = useGetTodaysStateQuery("");
+
+  const chooseTodayState = useCallback(
+    (fetchedState: number) => {
+      dispatch(setRandomIndex(fetchedState));
+      // dispatch(setRandomIndex(3));
+      const ans = germanStates[fetchedState];
+      // const ans = germanStates[3];
+      setAnswer(ans);
+      dispatch(setAnswerStr(ans.label));
+    },
+    [dispatch, setRandomIndex, setAnswer]
+  );
 
   function submitGuess() {
     if (value) {
@@ -274,13 +302,13 @@ function App() {
   }
 
   useEffect(() => {
-    chooseTodayState();
-  }, []);
+    if (data) {
+      chooseTodayState(data?.state);
+    }
+  }, [chooseTodayState, data]);
 
-  const shareScore = () => {
-    navigator.clipboard.writeText(clipboardText);
-    dispatch(setSnackbarMsg("Copied to clipboard"));
-    dispatch(openSnackbar());
+  const openStatsDialog = () => {
+    dispatch(toggleDialog(true));
   };
 
   const showAnswer = () => {
@@ -297,6 +325,68 @@ function App() {
         setTimeout(() => {
           showAnswer();
           dispatch(setGameOverLoss());
+          const loadedState = loadState();
+
+          console.log({ loadedState });
+
+          let wins, losses, new_losses, updatedStateResultsArray, innerStates;
+          let loaded_current_streak,
+            loaded_played,
+            loaded_win_percentage,
+            loaded_max_streak,
+            loaded_games_won;
+
+          if (loadedState) {
+            wins = loadedState?.states[answer.label]
+              ? loadedState?.states[answer.label][0]
+              : 0;
+            losses = loadedState.states[answer.label]
+              ? loadedState?.states[answer.label][1]
+              : 0;
+            new_losses = losses + 1; // [0,0]
+            updatedStateResultsArray = [wins, new_losses];
+
+            innerStates = loadedState.states;
+
+            loaded_current_streak = 0;
+            loaded_played = loadedState.stats.played + 1;
+
+            loaded_max_streak = loadedState.stats.max_streak;
+
+            loaded_games_won = loadedState.stats.games_won;
+
+            loaded_win_percentage = Math.trunc(
+              (loaded_games_won / loaded_played) * 100
+            );
+          } else {
+            updatedStateResultsArray = [0, 1];
+            loaded_current_streak = 0;
+            loaded_win_percentage = 0;
+            loaded_max_streak = 0;
+            loaded_games_won = 0;
+            loaded_played = 1;
+          }
+
+          let newSaveState = {
+            ...loadedState,
+            guesses,
+            today: new Date().getDate(),
+            played: true,
+            state: answer.label,
+            stats: {
+              current_streak: loaded_current_streak,
+              games_won: loaded_games_won,
+              played: loaded_played,
+              win_percentage: loaded_win_percentage,
+              max_streak: loaded_max_streak,
+            },
+            states: {
+              ...innerStates,
+              [answer.label]: updatedStateResultsArray,
+            },
+          };
+          console.log({ state: [answer.label], loadedState, newSaveState });
+          saveState(newSaveState);
         }, Delay);
       }
       const emojiStr = getShareText(allResults);
@@ -328,13 +418,80 @@ ${emojiStr}`
 ${emojiStr}`
         )
       );
+      const loadedState = loadState();
+
+      console.log({ loadedState });
+
+      let wins, losses, new_wins, updatedStateResultsArray, innerStates;
+      let loaded_current_streak,
+        loaded_played,
+        loaded_win_percentage,
+        loaded_max_streak,
+        loaded_games_won;
+
+      if (loadedState) {
+        wins = loadedState?.states[answer.label]
+          ? loadedState?.states[answer.label][0]
+          : 0;
+        losses = loadedState.states[answer.label]
+          ? loadedState?.states[answer.label][1]
+          : 0;
+        new_wins = wins + 1; // [0,0]
+        updatedStateResultsArray = [new_wins, losses];
+
+        innerStates = loadedState.states;
+
+        loaded_current_streak = loadedState.stats.current_streak + 1;
+        loaded_played = loadedState.stats.played + 1;
+
+        loaded_max_streak = loadedState.stats.max_streak;
+
+        loaded_max_streak =
+          loaded_current_streak > loaded_max_streak
+            ? loaded_current_streak
+            : loaded_max_streak;
+
+        loaded_games_won = loadedState.stats.games_won + 1;
+
+        loaded_win_percentage = Math.trunc(
+          (loaded_games_won / loaded_played) * 100
+        );
+      } else {
+        updatedStateResultsArray = [1, 0];
+        loaded_current_streak = 1;
+        loaded_win_percentage = 100;
+        loaded_max_streak = 1;
+        loaded_games_won = 1;
+        loaded_played = 1;
+      }
+
+      let newSaveState = {
+        ...loadedState,
+        guesses,
+        today: new Date().getDate(),
+        played: true,
+        state: answer.label,
+        stats: {
+          current_streak: loaded_current_streak,
+          games_won: loaded_games_won,
+          played: loaded_played,
+          win_percentage: loaded_win_percentage,
+          max_streak: loaded_max_streak,
+        },
+        states: {
+          ...innerStates,
+          [answer.label]: updatedStateResultsArray,
+        },
+      };
+      console.log({ state: [answer.label], loadedState, newSaveState });
+      saveState(newSaveState);
       dispatch(openSnackbar());
       confetti();
     }
-  }, [gameOverWin, guesses]);
+  }, [gameOverWin, guesses, dispatch]);
 
   return (
-    <Container>
+    <Container maxWidth="xs">
       <Box>
         <Grid
           container
@@ -347,30 +504,30 @@ ${emojiStr}`
             id="app-title"
             item
             xs={12}
-            my={1}
+            mt={1}
             sx={{
               display: "flex",
               justifyContent: "center",
             }}
           >
-            <Paper
+            <Box
               sx={{
                 width: "100%",
-                p: 1,
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
               }}
-              elevation={12}
             >
               <h1
                 style={{
+                  fontSize: "36px",
                   margin: theme.spacing(2),
                 }}
               >
                 <span
                   style={{
                     color: "#111",
+                    textShadow: "2px 2px 0 #000",
                   }}
                 >
                   Deut
@@ -378,6 +535,7 @@ ${emojiStr}`
                 <span
                   style={{
                     color: "#e74c3c",
+                    textShadow: "2px 2px 0 #000",
                   }}
                 >
                   sch
@@ -385,53 +543,80 @@ ${emojiStr}`
                 <span
                   style={{
                     color: "#f1c40f",
+                    textShadow: "2px 2px 0 #000",
                   }}
                 >
-                  land
+                  lan
                 </span>
                 <span
                   style={{
-                    color: "#27ae60",
+                    // color: "#27ae60",
+                    color: "green",
+                    textShadow: "2px 2px 0 #000",
                   }}
                 >
-                  le
+                  dle
                 </span>
               </h1>
-            </Paper>
-          </Grid>
-        </Grid>
-      </Box>
-      <Box id="state-img">
-        <Grid
-          container
-          my={0}
-          py={0}
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Grid
-            item
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Box>{germanStates[randomIndex].state}</Box>
+            </Box>
           </Grid>
         </Grid>
       </Box>
 
-      {[0, 1, 2, 3, 4, 5].map((_, i) => {
-        return (
-          <Box key={i}>
-            {GuessRow(i, guesses, germanStates[randomIndex].label)}
-          </Box>
-        );
-      })}
+      {isLoading && (
+        <>
+          <Grid container sx={{ display: "flex", justifyContent: "center" }}>
+            <Grid item mt={0}>
+              <Skeleton
+                animation="wave"
+                variant="rectangular"
+                width={350}
+                height={184}
+              />
+            </Grid>
+          </Grid>
+        </>
+      )}
+
+      {!isLoading && (
+        <>
+          <Fade in={true}>
+            <Box id="state-img">
+              <Grid
+                container
+                my={0}
+                py={0}
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Grid
+                  item
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Box>{germanStates[randomIndex].state}</Box>
+                </Grid>
+              </Grid>
+            </Box>
+          </Fade>
+        </>
+      )}
+
+      {[0, 1, 2, 3, 4, 5].map((_, i) => (
+        <Box key={i}>
+          <GuessRow
+            i={i}
+            guesses={guesses}
+            answerState={germanStates[randomIndex]?.label}
+          />
+        </Box>
+      ))}
 
       {gameOverLoss === false && gameOverWin === false && (
         <>
@@ -451,13 +636,18 @@ ${emojiStr}`
                 xs={12}
                 sx={{
                   display: "flex",
+                  "& .MuiAutocomplete-root .MuiInput-root .MuiInput-input": {
+                    cursor: "pointer",
+                  },
                   justifyContent: "center",
                   alignItems: "center",
                 }}
               >
                 <Autocomplete
                   options={germanStates}
-                  sx={{ width: 350 }}
+                  sx={{
+                    width: "90%",
+                  }}
                   value={value}
                   onChange={(
                     event: any,
@@ -504,7 +694,14 @@ ${emojiStr}`
                 onClick={() => submitGuess()}
                 variant="contained"
                 fullWidth={true}
-                color="success"
+                // color={"green"}
+                sx={{
+                  color: "#FFF",
+                  backgroundColor: "green",
+                  "&:hover": {
+                    backgroundColor: "#009432",
+                  },
+                }}
                 endIcon={<SendIcon />}
               >
                 Guess
@@ -513,55 +710,59 @@ ${emojiStr}`
           </Grid>
         </>
       )}
+
       {(gameOverLoss === true || gameOverWin === true) && (
-        <Grid
-          container
-          my={0.25}
-          columnSpacing={2}
-          py={2}
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
+        <>
           <Grid
-            item
-            xs={3}
+            container
+            my={0.25}
+            columnSpacing={2}
+            py={2}
             sx={{
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
             }}
           >
-            <Button
-              onClick={() => showAnswer()}
-              variant="contained"
-              sx={{ width: "100%" }}
-              color="success"
+            <Grid
+              item
+              xs={3}
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
             >
-              Answer
-            </Button>
-          </Grid>
-          <Grid
-            item
-            xs={9}
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Button
-              onClick={() => shareScore()}
-              variant="contained"
-              sx={{ width: "100%" }}
-              color="primary"
+              <Button
+                onClick={() => showAnswer()}
+                variant="contained"
+                sx={{ width: "100%" }}
+                color="success"
+              >
+                Answer
+              </Button>
+            </Grid>
+            <Grid
+              item
+              xs={9}
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
             >
-              Share
-            </Button>
+              <Button
+                onClick={() => openStatsDialog()}
+                variant="contained"
+                sx={{ width: "100%" }}
+                color="primary"
+              >
+                Share
+              </Button>
+            </Grid>
           </Grid>
-        </Grid>
+          <SimpleDialog />
+        </>
       )}
       <SnackbarPopup />
     </Container>
