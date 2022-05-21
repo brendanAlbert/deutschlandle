@@ -350,7 +350,14 @@ function App() {
             dispatch(setGameOverLoss());
           }
         }, Delay);
-      } else {
+      }
+    }
+
+    if (isLoading === true) {
+      const loaded_day = Debugging_Day ?? loadedState?.today;
+      const today = new Date().getDate();
+
+      if (loaded_day !== today) {
         setNotPlayed(true);
       }
     }
