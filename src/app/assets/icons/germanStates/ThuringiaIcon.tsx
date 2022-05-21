@@ -4,7 +4,10 @@ export const ThuringiaIcon = ({ size }: { size?: string }) => {
       width={size ?? "150px"}
       height={size ?? "150px"}
       version="1.1"
-      viewBox="515 560 175 180"
+      viewBox="515 567 175 180"
+      style={{
+        transform: "scale(1.2)",
+      }}
     >
       <path
         style={{

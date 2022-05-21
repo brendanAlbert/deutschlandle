@@ -24,11 +24,16 @@ import {
   addDistance,
   addGuessPercent,
   openSnackbar,
+  setAllResults,
   setAnswerStr,
   setClipboardText,
+  setDirections,
+  setDistances,
   setGameOverLoss,
   setGameOverWin,
   setGuess,
+  setGuesses,
+  setPercents,
   setRandomIndex,
   setResults,
   setSnackbarMsg,
@@ -45,7 +50,6 @@ import Skeleton from "@mui/material/Skeleton";
 import { SimpleDialog } from "./app/components/Dialog/Dialog";
 import { loadState, saveState } from "./app/browserStorage";
 
-// TODO - save users stats in localstorage
 const GuessRow = ({
   i,
   guesses,
@@ -90,7 +94,8 @@ const GuessRow = ({
               my={1}
               py={0.5}
               sx={{
-                minHeight: "47.5px",
+                minHeight: "40.5px",
+                maxHeight: "40.5px",
                 display: "flex",
                 justifyContent: "space-between",
               }}
@@ -105,7 +110,13 @@ const GuessRow = ({
                   alignItems: "center",
                 }}
               >
-                <Typography fontSize={14} p={1}>
+                <Typography
+                  fontSize={14}
+                  p={0}
+                  sx={{
+                    fontWeight: 600,
+                  }}
+                >
                   {guesses[i] ?? ""}&nbsp;{" "}
                 </Typography>
               </Grid>
@@ -119,7 +130,7 @@ const GuessRow = ({
                   justifyContent: "end",
                 }}
               >
-                <Box sx={{ fontSize: "14px" }} pr={1}>
+                <Box sx={{ fontSize: "14px", fontWeight: 500 }} pr={1}>
                   {guesses[i] ? dists[i] + ` kms ` : null}
                 </Box>
                 &nbsp;&nbsp;&nbsp;
@@ -138,7 +149,7 @@ const GuessRow = ({
                 }}
                 item
               >
-                <Typography p={1}>
+                <Typography sx={{ fontSize: "14px", fontWeight: 500 }}>
                   {guesses[i] ? `${percents[i]}%` : ""}
                 </Typography>
               </Grid>
@@ -158,7 +169,8 @@ const GuessRow = ({
             my={1}
             py={0.5}
             sx={{
-              minHeight: "47.5px",
+              minHeight: "40.5px",
+              maxHeight: "40.5px",
               display: "flex",
               justifyContent: "space-between",
             }}
@@ -205,6 +217,10 @@ const GuessRow = ({
 
 const Delay = 2800;
 
+const Debugging_Day = undefined;
+const Debugging_State = undefined;
+const Played = false;
+
 function App() {
   const dispatch = useAppDispatch();
   const guesses = useAppSelector((state) => state.app.guesses);
@@ -216,14 +232,20 @@ function App() {
   const allResults = useAppSelector((state) => state.app.allResults);
   const randomIndex = useAppSelector((state) => state.app.randomIndex);
 
+  const dists = useAppSelector((state) => state.app.distances);
+  const dirs = useAppSelector((state) => state.app.directions);
+  const percents = useAppSelector((state) => state.app.guessPercents);
+  const results = useAppSelector((state) => state.app.results);
+
+  const [alreadyPlayed, setAlreadyPlayed] = useState(false);
+  const [notPlayed, setNotPlayed] = useState(false);
+
   const { data, error, isLoading } = useGetTodaysStateQuery("");
 
   const chooseTodayState = useCallback(
     (fetchedState: number) => {
-      dispatch(setRandomIndex(fetchedState));
-      // dispatch(setRandomIndex(3));
-      const ans = germanStates[fetchedState];
-      // const ans = germanStates[3];
+      dispatch(setRandomIndex(Debugging_State ?? fetchedState));
+      const ans = germanStates[Debugging_State ?? fetchedState];
       setAnswer(ans);
       dispatch(setAnswerStr(ans.label));
     },
@@ -302,7 +324,47 @@ function App() {
   }
 
   useEffect(() => {
-    if (data) {
+    const loadedState = loadState();
+
+    if (isLoading === false && loadedState) {
+      const loaded_day = Debugging_Day ?? loadedState?.today;
+      const today = new Date().getDate();
+
+      if (loaded_day === today) {
+        dispatch(setGuesses(loadedState.guesses));
+        dispatch(setDistances(loadedState.distances));
+        dispatch(setDirections(loadedState.directions));
+        dispatch(setPercents(loadedState.percents));
+        dispatch(setResults(loadedState.results));
+        dispatch(setAnswerStr(loadedState.state));
+        dispatch(setRandomIndex(loadedState.index));
+        dispatch(setAllResults(loadedState.allResults));
+        setAnswer(germanStates[loadedState.index]);
+
+        setAlreadyPlayed(true);
+
+        setTimeout(() => {
+          if (loadedState.results[5] == 19) {
+            dispatch(setGameOverWin());
+          } else {
+            dispatch(setGameOverLoss());
+          }
+        }, Delay);
+      } else {
+        setNotPlayed(true);
+      }
+    }
+  }, [isLoading]);
+
+  useEffect(() => {
+    const loadedState = loadState();
+
+    const loaded_day = Debugging_Day ?? loadedState?.today;
+    const today = new Date().getDate();
+
+    if (loaded_day && loaded_day !== today && data) {
+      chooseTodayState(data?.state);
+    } else if (!loaded_day && data) {
       chooseTodayState(data?.state);
     }
   }, [chooseTodayState, data]);
@@ -311,8 +373,8 @@ function App() {
     dispatch(toggleDialog(true));
   };
 
-  const showAnswer = () => {
-    dispatch(setSnackbarMsg(answer?.label));
+  const showAnswer = (answerArg?: string) => {
+    dispatch(setSnackbarMsg(answerArg ?? answer?.label));
     dispatch(openSnackbar());
     if (gameOverWin) {
       confetti();
@@ -326,8 +388,6 @@ function App() {
           showAnswer();
           dispatch(setGameOverLoss());
           const loadedState = loadState();
-
-          console.log({ loadedState });
 
           let wins, losses, new_losses, updatedStateResultsArray, innerStates;
           let loaded_current_streak,
@@ -370,8 +430,13 @@ function App() {
           let newSaveState = {
             ...loadedState,
             guesses,
+            distances: dists,
+            directions: dirs,
+            percents: percents,
+            index: randomIndex,
+            allResults,
+            results,
             today: new Date().getDate(),
-            played: true,
             state: answer.label,
             stats: {
               current_streak: loaded_current_streak,
@@ -385,8 +450,15 @@ function App() {
               [answer.label]: updatedStateResultsArray,
             },
           };
-          console.log({ state: [answer.label], loadedState, newSaveState });
-          saveState(newSaveState);
+          const previous_day = Debugging_Day ?? loadedState?.today;
+          const today = new Date().getDate();
+          if (Played || (previous_day && previous_day !== today)) {
+            if (!Played) {
+              saveState(newSaveState);
+            }
+          } else if (!previous_day) {
+            saveState(newSaveState);
+          }
         }, Delay);
       }
       const emojiStr = getShareText(allResults);
@@ -419,8 +491,6 @@ ${emojiStr}`
         )
       );
       const loadedState = loadState();
-
-      console.log({ loadedState });
 
       let wins, losses, new_wins, updatedStateResultsArray, innerStates;
       let loaded_current_streak,
@@ -468,8 +538,13 @@ ${emojiStr}`
       let newSaveState = {
         ...loadedState,
         guesses,
+        distances: dists,
+        directions: dirs,
+        index: randomIndex,
+        percents: percents,
+        allResults,
+        results,
         today: new Date().getDate(),
-        played: true,
         state: answer.label,
         stats: {
           current_streak: loaded_current_streak,
@@ -483,8 +558,18 @@ ${emojiStr}`
           [answer.label]: updatedStateResultsArray,
         },
       };
-      console.log({ state: [answer.label], loadedState, newSaveState });
-      saveState(newSaveState);
+
+      const previous_day = Debugging_Day ?? loadedState?.today;
+      const today = new Date().getDate();
+
+      if (previous_day && previous_day !== today) {
+        if (!Played) {
+          saveState(newSaveState);
+        }
+      } else if (!previous_day) {
+        saveState(newSaveState);
+      }
+
       dispatch(openSnackbar());
       confetti();
     }
@@ -504,7 +589,7 @@ ${emojiStr}`
             id="app-title"
             item
             xs={12}
-            mt={1}
+            mt={0}
             sx={{
               display: "flex",
               justifyContent: "center",
@@ -520,8 +605,8 @@ ${emojiStr}`
             >
               <h1
                 style={{
-                  fontSize: "36px",
-                  margin: theme.spacing(2),
+                  margin: theme.spacing(1),
+                  fontSize: "30px",
                 }}
               >
                 <span
@@ -550,7 +635,6 @@ ${emojiStr}`
                 </span>
                 <span
                   style={{
-                    // color: "#27ae60",
                     color: "green",
                     textShadow: "2px 2px 0 #000",
                   }}
@@ -571,7 +655,7 @@ ${emojiStr}`
                 animation="wave"
                 variant="rectangular"
                 width={350}
-                height={184}
+                height={144}
               />
             </Grid>
           </Grid>
@@ -600,7 +684,7 @@ ${emojiStr}`
                     alignItems: "center",
                   }}
                 >
-                  <Box>{germanStates[randomIndex].state}</Box>
+                  <Box>{germanStates[randomIndex]?.state}</Box>
                 </Grid>
               </Grid>
             </Box>
@@ -618,13 +702,67 @@ ${emojiStr}`
         </Box>
       ))}
 
-      {gameOverLoss === false && gameOverWin === false && (
-        <>
-          <Paper elevation={12}>
+      {gameOverLoss === false &&
+        gameOverWin === false &&
+        alreadyPlayed === false &&
+        notPlayed === true && (
+          <>
+            <Paper elevation={12}>
+              <Grid
+                container
+                my={1}
+                pt={1}
+                pb={2}
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Grid
+                  item
+                  xs={12}
+                  sx={{
+                    display: "flex",
+                    "& .MuiAutocomplete-root .MuiInput-root .MuiInput-input": {
+                      cursor: "pointer",
+                    },
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Autocomplete
+                    options={germanStates}
+                    sx={{
+                      width: "90%",
+                    }}
+                    value={value}
+                    onChange={(
+                      event: any,
+                      newValue: { label: string } | null
+                    ) => {
+                      setValue(newValue);
+                    }}
+                    isOptionEqualToValue={(option, value) =>
+                      option.label === value.label
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        variant="standard"
+                        color="success"
+                        {...params}
+                        label="State"
+                      />
+                    )}
+                  />
+                </Grid>
+              </Grid>
+            </Paper>
+
             <Grid
               container
-              my={1}
-              py={2}
+              my={0.25}
+              py={0.5}
               sx={{
                 display: "flex",
                 justifyContent: "center",
@@ -636,80 +774,29 @@ ${emojiStr}`
                 xs={12}
                 sx={{
                   display: "flex",
-                  "& .MuiAutocomplete-root .MuiInput-root .MuiInput-input": {
-                    cursor: "pointer",
-                  },
                   justifyContent: "center",
                   alignItems: "center",
                 }}
               >
-                <Autocomplete
-                  options={germanStates}
+                <Button
+                  onClick={() => submitGuess()}
+                  variant="contained"
+                  fullWidth={true}
                   sx={{
-                    width: "90%",
+                    color: "#FFF",
+                    backgroundColor: "green",
+                    "&:hover": {
+                      backgroundColor: "#009432",
+                    },
                   }}
-                  value={value}
-                  onChange={(
-                    event: any,
-                    newValue: { label: string } | null
-                  ) => {
-                    setValue(newValue);
-                  }}
-                  isOptionEqualToValue={(option, value) =>
-                    option.label === value.label
-                  }
-                  renderInput={(params) => (
-                    <TextField
-                      variant="standard"
-                      color="success"
-                      {...params}
-                      label="State"
-                    />
-                  )}
-                />
+                  endIcon={<SendIcon />}
+                >
+                  Guess
+                </Button>
               </Grid>
             </Grid>
-          </Paper>
-
-          <Grid
-            container
-            my={0.25}
-            py={2}
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Grid
-              item
-              xs={12}
-              sx={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Button
-                onClick={() => submitGuess()}
-                variant="contained"
-                fullWidth={true}
-                // color={"green"}
-                sx={{
-                  color: "#FFF",
-                  backgroundColor: "green",
-                  "&:hover": {
-                    backgroundColor: "#009432",
-                  },
-                }}
-                endIcon={<SendIcon />}
-              >
-                Guess
-              </Button>
-            </Grid>
-          </Grid>
-        </>
-      )}
+          </>
+        )}
 
       {(gameOverLoss === true || gameOverWin === true) && (
         <>
@@ -717,7 +804,7 @@ ${emojiStr}`
             container
             my={0.25}
             columnSpacing={2}
-            py={2}
+            py={0}
             sx={{
               display: "flex",
               justifyContent: "center",

@@ -5,12 +5,14 @@ export const SaarlandIcon = ({ size }: { size?: string }) => {
       height={size ?? "150px"}
       version="1.1"
       viewBox="298 778 50 70"
+      style={{
+        transform: "scale(1.2)",
+      }}
     >
       <polygon
         xmlns="http://www.w3.org/2000/svg"
         style={{
           fill: "#FFF",
-          stroke: "#FFF",
           strokeWidth: "0.8504",
           strokeMiterlimit: "3.8637",
         }}

@@ -4,7 +4,10 @@ export const SchleswigHolsteinIcon = ({ size }: { size?: string }) => {
       width={size ?? "150px"}
       height={size ?? "150px"}
       version="1.1"
-      viewBox="405 210 200 200"
+      viewBox="405 220 200 200"
+      style={{
+        transform: "scale(1.2)",
+      }}
     >
       <g>
         <polygon

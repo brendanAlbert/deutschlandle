@@ -4,7 +4,10 @@ export const BrandenburgIcon = ({ size }: { size?: string }) => {
       width={size ?? "150px"}
       height={size ?? "150px"}
       version="1.1"
-      viewBox="600 370 250 250"
+      viewBox="600 380 250 250"
+      style={{
+        transform: "scale(1.1)",
+      }}
     >
       <g>
         <path

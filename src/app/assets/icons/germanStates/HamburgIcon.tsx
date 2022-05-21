@@ -4,7 +4,10 @@ export const HamburgIcon = ({ size }: { size?: string }) => {
       width={size ?? "150px"}
       height={size ?? "150px"}
       version="1.1"
-      viewBox="505 361 40 40"
+      viewBox="505 363 40 40"
+      style={{
+        transform: "scale(1.1)",
+      }}
     >
       <path
         xmlns="http://www.w3.org/2000/svg"

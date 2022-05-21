@@ -49,7 +49,12 @@ function GuessTransition({
         container
         mt={1}
         p={2}
-        sx={{ minHeight: "47.5px", display: "flex", justifyContent: "center" }}
+        sx={{
+          minHeight: "40.5px",
+          maxHeight: "40.5px",
+          display: "flex",
+          justifyContent: "center",
+        }}
       >
         <Grid item xs={1.5}>
           <Zoom in={checked}>

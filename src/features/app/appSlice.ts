@@ -1,6 +1,4 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { loadState, saveState } from "../../app/browserStorage";
-import { germanStates } from "../../app/components/States/states";
 
 export interface AppState {
     answer: string;
@@ -86,11 +84,20 @@ export const appSlice = createSlice({
     addDirection: (state, action: PayloadAction<number>) => {
         state.directions?.push(action.payload);
     },
+    setDirections: (state, action: PayloadAction<any>) => {
+        state.directions = action.payload;
+    },
     addDistance: (state, action: PayloadAction<number>) => {
         state.distances?.push(action.payload);
     },
+    setDistances: (state, action: PayloadAction<any>) => {
+        state.distances = action.payload;
+    },
     addGuessPercent: (state, action: PayloadAction<number>) => {
         state.guessPercents?.push(action.payload);
+    },
+    setPercents: (state, action: PayloadAction<any>) => {
+        state.guessPercents = action.payload;
     },
     setAnswerStr: (state, action: PayloadAction<string>) => {
         state.answer = action.payload;
@@ -98,11 +105,17 @@ export const appSlice = createSlice({
     setGuess: (state, action: PayloadAction<string>) => {
         state.guess = action.payload;
     },
+    setGuesses: (state, action: PayloadAction<any>) => {
+        state.guesses = action.payload;
+    },
     setResults: (state, action: PayloadAction<number[]>) => {
         state.results = action.payload;
     },
     addAllResults: (state, action: PayloadAction<number[]>) => {
         state.allResults.push(action.payload);
+    },
+    setAllResults: (state, action: PayloadAction<any>) => {
+        state.allResults = action.payload;
     },
     setRandomIndex: (state, action: PayloadAction<number>) => {
         state.randomIndex = action.payload;
@@ -120,14 +133,19 @@ export const {
   setSnackbarMsg,
   setGameOverWin,
   setGameOverLoss,
-setClipboardText,
-setRandomIndex,
+  setClipboardText,
+  setRandomIndex,
   addDirection,
+  setDirections,
   addDistance,
+  setDistances,
   addGuessPercent,
+  setPercents,
   setAnswerStr,
   setGuess,
+  setGuesses,
   setResults,
+  setAllResults,
   toggleDialog,
   addAllResults,
 } = appSlice.actions;

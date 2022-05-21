@@ -4,7 +4,10 @@ export const BremenIcon = ({ size }: { size?: string }) => {
       width={size ?? "150px"}
       height={size ?? "150px"}
       version="1.1"
-      viewBox="405 372 70 70"
+      viewBox="405 374 70 70"
+      style={{
+        transform: "scale(1.1)",
+      }}
     >
       <g>
         <polygon

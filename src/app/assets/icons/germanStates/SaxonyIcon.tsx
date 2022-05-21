@@ -5,6 +5,9 @@ export const SaxonyIcon = ({ size }: { size?: string }) => {
       height={size ?? "150px"}
       version="1.1"
       viewBox="640 580 205 150"
+      style={{
+        transform: "scale(1.3)",
+      }}
     >
       <g>
         <path

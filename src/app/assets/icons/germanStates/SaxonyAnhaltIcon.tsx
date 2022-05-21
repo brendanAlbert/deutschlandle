@@ -4,7 +4,10 @@ export const SaxonyAnhaltIcon = ({ size }: { size?: string }) => {
       width={size ?? "150px"}
       height={size ?? "150px"}
       version="1.1"
-      viewBox="520 440 240 200"
+      viewBox="520 450 240 200"
+      style={{
+        transform: "scale(1.1)",
+      }}
     >
       <path
         style={{

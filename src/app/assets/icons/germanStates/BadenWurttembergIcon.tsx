@@ -4,7 +4,10 @@ export const BadenWurttembergIcon = ({ size }: { size?: string }) => {
       width={size ?? "150px"}
       height={size ?? "150px"}
       version="1.1"
-      viewBox="320 780 270 200"
+      viewBox="320 790 270 200"
+      style={{
+        transform: "scale(1.1)",
+      }}
     >
       <polygon
         style={{

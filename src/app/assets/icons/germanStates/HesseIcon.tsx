@@ -4,7 +4,10 @@ export const HesseIcon = ({ size }: { size?: string }) => {
       width={size ?? "150px"}
       height={size ?? "150px"}
       version="1.1"
-      viewBox="350 570 220 250"
+      viewBox="350 574 220 250"
+      style={{
+        transform: "scale(1.1)",
+      }}
     >
       <path
         style={{

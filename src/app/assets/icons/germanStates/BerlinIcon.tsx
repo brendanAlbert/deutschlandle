@@ -5,6 +5,9 @@ export const BerlinIcon = ({ size }: { size?: string }) => {
       height={size ?? "150px"}
       version="1.1"
       viewBox="720 465 40 50"
+      style={{
+        transform: "scale(1.3)",
+      }}
     >
       <g>
         <path

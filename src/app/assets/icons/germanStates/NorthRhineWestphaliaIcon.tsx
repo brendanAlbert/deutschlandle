@@ -4,7 +4,10 @@ export const NorthRhineWestphaliaIcon = ({ size }: { size?: string }) => {
       width={size ?? "150px"}
       height={size ?? "150px"}
       version="1.1"
-      viewBox="240 500 260 190"
+      viewBox="240 515 260 190"
+      style={{
+        transform: "scale(1.1)",
+      }}
     >
       <path
         xmlns="http://www.w3.org/2000/svg"
