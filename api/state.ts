@@ -4,7 +4,7 @@ const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const getTodaysDateFormatted = () => {
-  const todays_date = new Date().toLocaleString().split(",")[0]; // 5/8/2022
+  const todays_date = new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles'}).split(",")[0]; // 5/8/2022
   const split_array = todays_date.split("/");
   const year = split_array[2];
   const month = split_array[0].length === 2 ? split_array[0] : "0" + split_array[0];
